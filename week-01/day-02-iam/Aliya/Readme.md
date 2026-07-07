@@ -163,8 +163,25 @@ Bucket Used: aliyas-22-bucket
 
 
  ![switch role ](Screenshots/iam-role.png)
- 
 
  ---
- 
+
+### I configured GitHub Actions to authenticate with AWS using OpenID Connect (OIDC) instead of storing long-lived AWS access keys as GitHub Secrets. How it works:
+
++ GitHub Actions requests a signed OIDC token for the workflow run.
+  
++ AWS IAM's OIDC Identity Provider validates this token against the configured trust policy (which restricts access to a specific GitHub repository).
+  
++ If the token is valid, AWS STS uses AssumeRoleWithWebIdentity to issue temporary security credentials.
+
++ These temporary credentials are used to access AWS resources
+  
++ (e.g., verifying identity with aws sts get-caller-identity, listing S3 buckets).
+
+### Why OIDC is more secure:
+
+**Storing permanent AWS access keys in GitHub Secrets creates risk — if leaked, they remain valid until manually rotated. OIDC removes this risk entirely by using short-lived, automatically expiring credentials generated fresh for every workflow run, tied specifically to my repository. This follows the AWS best practice of avoiding long-lived credentials in favor of temporary, scoped, and auditable access.**
+
+ ![oidc-provider](https://github.com/Aliyas-22/aws-week-1-challenge)
+
 

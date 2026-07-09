@@ -187,3 +187,8 @@ Bucket Used: aliyas-22-bucket
  ![oidc-provider](https://github.com/Aliyas-22/aws-week-1-challenge)
 ![oidc-task ](Screenshots/oidc-provider.png)
 
+
+## LinkedIn Post
+
+https://www.linkedin.com/posts/shaikh-aliya22_10weeksofaws-10weeksofaws-aws10weekchallenge-ugcPost-7480241523914186752-jD3Q/?utm_source=social_share_send&utm_medium=member_desktop_web&rcm=ACoAAFTAa6kBnFsZizIFmvS4f21x6dmrZA1sPCY
+

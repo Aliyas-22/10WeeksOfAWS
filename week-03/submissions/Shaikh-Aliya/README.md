@@ -96,13 +96,13 @@ Successfully completed:
 
 ## VPC Resource Map
 
-![VPC Resource Map](screenshots/vpc-resource-map.png)
+![VPC Resource Map](Screenshots/vpc-resource-map.png)
 
 ---
 ## Private Route Table
 ## Public Route Table
 
-![Public Route Table](screenshots/public-route-table.png)
+![Public Route Table](Screenshots/public-route-table.png)
 
 ---
 

@@ -345,12 +345,6 @@ Deleted all billable resources.
 ---
 
 #  LinkedIn Posts
-
-- **Day 5:** *Add your LinkedIn URL here*
 - **Day 6:** *Add your LinkedIn URL here*
 
 ---
-
-# ✅ Project Status
-
-✔️ Completed Successfully

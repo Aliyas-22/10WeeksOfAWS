@@ -1,140 +1,356 @@
-# Week 3 - Amazon VPC
+#  Week 3 • Day 6 - Amazon VPC
 
-## Name
-Shaikh Aliya 
+ ### Shaikh Aliya
 
-## Architecture
+---
 
-Built a **two-AZ VPC** (`cloudadhar-day6-vpc`) with a public + private tier in each zone.
+#  Goal
 
-**[Insert your architecture diagram screenshot here]**
+Build a production-style Amazon VPC with:
 
-Diagram includes:
-- VPC boundary + both Availability Zones (ap-south-1a, ap-south-1b)
-- 4 subnets with CIDR ranges
-- Internet Gateway attached to VPC
-- NAT Gateway inside public subnet
-- Route tables + their routes
-- Security Groups on each instance/ENI
-- Custom NACL on public subnet
-- S3 Gateway Endpoint + Interface Endpoint
-- Flow Logs path to CloudWatch
+- Multi-AZ architecture
+- Public and Private Subnets
+- Internet Gateway
+- NAT Gateway
+- Route Tables
+- Network ACLs
+- Security Groups
+- VPC Endpoints
+- VPC Flow Logs
+- AWS Systems Manager (Session Manager)
 
-## CIDR Plan
+---
 
-| Resource | CIDR | Total Addresses | Usable Addresses* |
-|---|---|---|---|
+# AWS Services Used
+
+- Amazon VPC
+- EC2
+- Internet Gateway
+- NAT Gateway
+- Route Tables
+- Security Groups
+- Network ACLs
+- VPC Endpoints
+- AWS Systems Manager
+- CloudWatch Logs
+- VPC Flow Logs
+
+---
+
+#  Architecture
+
+Built a **two Availability Zone VPC (`cloudadhar-day6-vpc`)** consisting of:
+
+- Public and Private subnet in each AZ
+- Internet Gateway
+- NAT Gateway
+- Route Tables
+- Network ACL
+- Security Groups
+- VPC Endpoints
+- CloudWatch Flow Logs
+
+## Architecture Diagram
+
+![VPC Architecture](Screenshots/AWS-Vpc.gif)
+---
+
+#  CIDR Plan
+
+| Resource | CIDR | Total Addresses | Usable |
+|-----------|------|-----------------|---------|
 | VPC | 10.10.0.0/16 | 65,536 | — |
 | Public-A | 10.10.1.0/24 | 256 | 251 |
 | Private-A | 10.10.11.0/24 | 256 | 251 |
 | Public-B | 10.10.2.0/24 | 256 | 251 |
 | Private-B | 10.10.12.0/24 | 256 | 251 |
 
-*AWS reserves 5 IPs per subnet (network address, router, DNS, future use, broadcast).
+> AWS reserves 5 IP addresses in every subnet.
 
- All subnets fit inside VPC range, no overlaps.
+All subnet ranges fit inside the VPC CIDR and do not overlap.
 
-## Public vs Private
+---
 
-A subnet is public when...
+#  VPC Overview
 
-- Its route table sends `0.0.0.0/0` **directly to an Internet Gateway**
-- That's the *only* rule — not the name, not the auto-assign IP setting
-- Private subnet = either no `0.0.0.0/0` route, or routes it to a **NAT Gateway** instead of an IGW
+Created a custom VPC with four subnets across two Availability Zones.
 
-## Day 6 Result
+![VPC Overview](Screenshots/vpc-day6.png)
 
-**NAT Gateway + Private Egress**
-- Created NAT Gateway `cloudadhar-day6-nat-a` in public subnet, with its own Elastic IP
-- Dedicated private route table → `0.0.0.0/0 → NAT Gateway`
-- Launched private EC2 instance (no public IP), connected via **Session Manager** (no SSH key/bastion needed)
-- Ran `curl` to a public HTTPS endpoint → confirmed outbound internet works, with zero inbound exposure
+---
 
-**[Insert screenshot: NAT Gateway details]**
+#  Public vs Private Subnets
 
-**Security Group vs NACL**
-- Launched public EC2 with nginx → confirmed page loads over public IP
-- Created custom NACL on public subnet, allow rules for HTTP + ephemeral return ports
-- Added one **lower-numbered deny rule** blocking HTTP from my own IP (`/32`)
-  - NACLs evaluate rules in order, stop at first match → deny hit before allow
--  Confirmed page failed to load → removed deny rule → access restored
+## Public Subnet
 
-**Key takeaway:**
+A subnet becomes **public** when its route table contains:
 
-| | Security Group | NACL |
-|---|---|---|
-| State | Stateful (return traffic auto-allowed) | Stateless (return traffic needs its own rule) |
-| Rules | Allow only | Allow + Deny |
-| Evaluation | All rules checked | Stops at first matching rule (in order) |
+```
+0.0.0.0/0 → Internet Gateway
+```
 
-**[Insert screenshot: Route tables / NACL rules]**
+Instances inside can receive internet traffic if they also have:
 
-**VPC Endpoints**
-- **S3 Gateway Endpoint** → attached to private route table, adds private prefix-list route to S3, no hourly cost
-  - Verified with an S3 API call from the private instance
-- **Interface Endpoint** (EC2 API) → private DNS enabled, own restrictive SG
-  - Verified via `nslookup` resolving to a private IP
-  - Deleted right after testing (bills hourly)
+- Public IP
+- Security Group allowing inbound traffic
 
-**[Insert screenshot: Endpoints]**
+## Private Subnet
 
-**Flow Logs**
-- Enabled VPC Flow Logs (traffic type: All) → CloudWatch Logs group
-- Generated both normal traffic (web page load) and rejected traffic (re-triggered NACL deny)
-- Queried CloudWatch Logs Insights → confirmed both **ACCEPT** and **REJECT** records, with source/destination, ports, protocol, action
+Private subnets do **not** route directly to the Internet Gateway.
 
-**[Insert screenshot: CloudWatch Logs Insights results]**
+Instead:
 
-## Architecture Decisions
+```
+0.0.0.0/0 → NAT Gateway
+```
 
-**Why NAT per AZ?**
-- Avoids cross-AZ dependency
-- If AZ-A's private subnet routed through a NAT Gateway sitting in AZ-B, an AZ-B outage would break AZ-A's internet access too
-- Keeping NAT local to each AZ = each AZ stays independently healthy — the whole point of building multi-AZ
+Instances can access the internet for updates without exposing themselves publicly.
 
-**Why an S3 Gateway Endpoint?**
-- Without it: private → S3 traffic goes through NAT → costs per-GB + extra hop
-- With it: direct private route via managed prefix list
-- No hourly charge, no NAT data-processing cost
-- Preferred path specifically for **S3 and DynamoDB**
+---
 
-**When Transit Gateway instead of Peering?**
-- VPC Peering = one-to-one only, and **non-transitive**
-  - A↔B and B↔C peered ≠ A can reach C
-- Gets unmanageable past a handful of VPCs (needs a separate peering link per pair)
-- **Transit Gateway** = central transitive hub
-  - Each VPC connects once → can reach every other connected VPC through it
+#  NAT Gateway
 
-## Where I Got Stuck
+Created a NAT Gateway inside the Public Subnet and attached an Elastic IP.
 
-- **Problem:** Private EC2's SSM agent went from Online → Offline mid-testing, reporting a connection timeout to the SSM service
-- **Investigated, layer by layer:**
-  - ✅ Private subnet route table → correct (NAT target)
-  - ✅ Public subnet route table → correct (IGW target)
-  - ✅ NAT Gateway status + Elastic IP → healthy
-  - ✅ Security group outbound rules → fully open
-  - ✅ Custom NACL (public subnet) → correct, not blocking
-  - ✅ Default NACL (private subnet) → fine
-  - ✅ IGW attachment → confirmed attached
-- **Result:** every individual layer looked correct on its own — issue was in how several recent changes (route tables, SGs, endpoint creation) interacted together, not one single broken setting
-- **Fix:** rebooted the instance to clear stale network state; also Removed the subnet Associate from NACl
+Configured the Private Route Table so that all outbound traffic uses the NAT Gateway.
 
-## Cleanup
+Verified internet connectivity from the private EC2 instance using Session Manager and the `curl` command.
 
-- ✅ Interface Endpoint — deleted right after testing (hourly billed)
-- ✅ Public + private EC2 test instances — terminated
-- ✅ NAT Gateway — deleted
-- ✅ Elastic IP (NAT's) — released
-- ✅ Custom NACL — disassociated, then deleted
-- ✅ Extra private route table — disassociated, deleted
-- ✅ Public + private route tables — deleted (main RT kept)
-- ✅ Internet Gateway — detached, deleted
-- ✅ All 4 subnets — deleted
-- ✅ VPC — deleted
-- ✅ S3 Gateway Endpoint — deleted (optional, no hourly cost)
+```bash
+curl https://aws.amazon.com
+```
 
+### Screenshot
 
-## LinkedIn Posts
+![NAT Gateway](Screenshots/Nat-Gateway.png)
 
-- Day 5: [Insert your Day 5 LinkedIn post URL]
-- Day 6: [Insert your Day 6 LinkedIn post URL]
+---
+
+#  Public EC2 Access
+
+Launched an EC2 instance in the Public Subnet.
+
+Installed Nginx.
+
+Verified that the website was accessible using the instance's public IP.
+
+### Screenshot
+
+![Public Instance](Screenshots/instance-access.png)
+
+---
+
+#  Security Groups vs Network ACLs
+
+Created a custom Network ACL for the public subnet.
+
+Added:
+
+- Allow HTTP
+- Allow Ephemeral Ports
+- Allow HTTPS
+
+Then created a **lower-numbered DENY rule** blocking my own public IP.
+
+The NACL evaluated the DENY rule first, making the web server unreachable.
+
+After removing the DENY rule, access was restored.
+
+### Screenshot
+
+![Blocked Access](Screenshots/instance-can't-reach.png)
+
+---
+
+#  Route Tables
+
+Configured separate Route Tables for Public and Private Subnets.
+
+### Public Route Table
+
+```
+0.0.0.0/0 → Internet Gateway
+```
+
+### Private Route Table
+
+```
+0.0.0.0/0 → NAT Gateway
+```
+
+### Screenshot
+
+![Route Tables](Screenshots/Route-tables.png)
+
+---
+
+#  VPC Endpoints
+
+Configured two different VPC Endpoints.
+
+## S3 Gateway Endpoint
+
+- Attached to Private Route Table
+- Uses AWS Managed Prefix List
+- No hourly charges
+
+Verified using S3 API calls from the Private EC2.
+
+---
+
+## EC2 Interface Endpoint
+
+- Enabled Private DNS
+- Attached restrictive Security Group
+- Verified using:
+
+```bash
+nslookup ec2.ap-south-1.amazonaws.com
+```
+
+Deleted immediately after testing because Interface Endpoints are billed hourly.
+
+### Screenshot
+
+![Endpoints](Screenshots/Endpoints.png)
+![Endpoints-address](Screenshots/address.png)
+---
+
+#  VPC Flow Logs
+
+Enabled VPC Flow Logs and sent logs to CloudWatch Logs.
+
+Generated both:
+
+- ACCEPT traffic
+- REJECT traffic
+
+Queried CloudWatch Logs Insights and verified:
+
+- Source IP
+- Destination IP
+- Protocol
+- Port
+- ACCEPT
+- REJECT
+
+### Screenshot
+
+![CloudWatch Logs](Screenshots/CloudWatchLogs.png)
+
+---
+
+#  Architecture Decisions
+
+## Why NAT Gateway?
+
+- Allows Private EC2 instances to access the internet.
+- Prevents inbound internet access.
+- Keeps workloads secure.
+
+---
+
+## Why S3 Gateway Endpoint?
+
+Without Gateway Endpoint:
+
+Private EC2 → NAT Gateway → Internet → S3
+
+With Gateway Endpoint:
+
+Private EC2 → AWS Private Network → S3
+
+Benefits:
+
+- No hourly cost
+- Lower latency
+- No NAT data processing charges
+
+---
+
+## Why Transit Gateway instead of Peering?
+
+VPC Peering
+
+- One-to-One
+- Non-transitive
+- Difficult to manage at scale
+
+Transit Gateway
+
+- Central Hub
+- Transitive Routing
+- Easier management
+- Recommended for large AWS environments
+
+---
+
+#  Troubleshooting
+
+During testing, the SSM Agent changed from **Online** to **Offline**.
+
+I investigated:
+
+- ✅ Route Tables
+- ✅ NAT Gateway
+- ✅ Internet Gateway
+- ✅ Security Groups
+- ✅ Network ACLs
+- ✅ Endpoint Configuration
+
+Everything appeared correct.
+
+The issue was caused by changes made during networking configuration.
+
+### Resolution
+
+- Rebooted the EC2 instance.
+- Removed the incorrect NACL association.
+- Confirmed the SSM Agent became Online again.
+
+---
+
+#  Learning Outcomes
+
+After completing this lab I learned:
+
+- Designing Multi-AZ VPCs
+- Public vs Private Networking
+- NAT Gateway
+- Internet Gateway
+- Route Tables
+- Security Groups
+- Network ACLs
+- VPC Endpoints
+- CloudWatch Flow Logs
+- Troubleshooting SSM connectivity
+
+---
+
+#  Cleanup
+
+Deleted all billable resources.
+
+- ✅ Interface Endpoint
+- ✅ EC2 Instances
+- ✅ NAT Gateway
+- ✅ Elastic IP
+- ✅ Route Tables
+- ✅ Custom Network ACL
+- ✅ Internet Gateway
+- ✅ VPC Endpoints
+- ✅ Subnets
+- ✅ VPC
+
+---
+
+#  LinkedIn Posts
+
+- **Day 5:** *Add your LinkedIn URL here*
+- **Day 6:** *Add your LinkedIn URL here*
+
+---
+
+# ✅ Project Status
+
+✔️ Completed Successfully

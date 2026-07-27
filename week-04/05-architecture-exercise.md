@@ -9,10 +9,12 @@ Draw one diagram connecting the image and storage lifecycles.
 - Builder, SSM role, security group, User Data, and IMDSv2
 - Golden AMI v2 and test EC2 with no User Data
 - Storage EC2, gp3 data volume, snapshot, and restored volume
+- Sydney Region boundary and the cross-Region snapshot copy
+- Regional EFS, its mount targets, NFS security group, and two EC2 clients
 - A note that EBS volumes are AZ scoped while AMIs and snapshots are Regional
 
 Use arrows labeled `bootstraps`, `creates image`, `launches from`, `attaches`,
-`snapshots`, and `restores`.
+`snapshots`, `copies to Region`, `restores`, and `mounts`.
 
 ## Decision Table
 
@@ -26,6 +28,8 @@ Complete the reason column:
 | Token-based metadata | IMDSv2 required | |
 | General application block storage | gp3 | |
 | Critical provisioned IOPS | io2 Block Express | |
+| Shared files for Linux instances across AZs | EFS | |
+| Same-AZ cluster-aware shared block device | io2 Multi-Attach | |
 | Temporary reproducible cache | Instance Store | |
 | Tightly coupled HPC | Cluster placement | |
 | Critical instance isolation | Spread placement | |
@@ -49,6 +53,9 @@ Write 200-300 words explaining:
 - Why IMDSv2 and an instance role improve security
 - Why the EBS volume must share the instance AZ
 - Why snapshots are recovery points
+- Why a cross-Region snapshot copy supports DR but is not a running recovery
+  environment
+- Why EFS uses mount targets and TCP `2049` from the EC2 security group
 - What still requires Multi-AZ design in production
 - Which resources can still cost money after an instance stops
 

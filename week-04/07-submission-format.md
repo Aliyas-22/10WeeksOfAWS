@@ -33,7 +33,11 @@ submissions/week-04/<github-username>/
 - Instance and volume AZ:
 - Filesystem and mount:
 - Stop/start persistence:
+- Resize and XFS growth:
 - Snapshot recovery:
+- Cross-Region encrypted copy:
+- DLM policy or review:
+- EFS clients and shared-file proof:
 - Storage decisions:
 - Placement decisions:
 
@@ -43,9 +47,11 @@ Write 200-300 words.
 ## Cleanup
 - Instances:
 - Volumes:
+- EFS:
 - AMIs:
 - Snapshots:
 - DLM policies:
+- Fast Snapshot Restore:
 - Placement groups:
 - Regions checked:
 
@@ -64,7 +70,16 @@ Write 200-300 words.
 - [ ] Test instance serves nginx without User Data
 - [ ] Same-AZ EC2 and EBS
 - [ ] `lsblk`, XFS, UUID mount, and persistence
+- [ ] EBS resize from 2 GiB to 4 GiB and XFS growth
 - [ ] Completed snapshot and recovered file
+- [ ] Post-snapshot data is absent from the restored point-in-time copy
+- [ ] Encrypted snapshot copy completed or was verified in Sydney
+- [ ] DLM targets only the tagged training volume
+- [ ] Optional FSR, Multi-Attach, and Instance Store resources were cleaned up
+- [ ] EFS mount targets and TCP `2049` security-group rule
+- [ ] Two EC2 hostnames mounted the same EFS ID
+- [ ] Each EFS client read a file written by the other client
+- [ ] Persistent EFS mount validation
 - [ ] Placement-group strategies
 - [ ] Architecture, cleanup, and LinkedIn link
 

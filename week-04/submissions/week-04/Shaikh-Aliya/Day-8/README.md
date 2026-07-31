@@ -26,6 +26,18 @@ Region used: `ap-south-1` (Mumbai), with a cross-region step in
 `ap-southeast-2` (Sydney).
 
 ---
+## Architecture Diagrams
+ 
+Diagrams created to summarize the AZ-scoped versus Regional distinction for
+both EBS and EFS.
+
+ 
+![EBS lifecycle diagram: instance and volume in one AZ, snapshot at the Region level, restored volume back in an AZ](./Diagram/EBS%20Diagram.drawio(1).png)
+
+![EFS shared storage diagram: Region and VPC boundary, two Availability Zones each with a subnet, mount target, EC2 client, and the shared security group rule](./Diagram/EFS-Daigram.gif)
+ 
+
+
 
 ## Part 1: Launch the Storage Instance
 

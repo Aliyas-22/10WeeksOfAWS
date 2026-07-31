@@ -131,7 +131,7 @@ strategies:
 - Partition: instances grouped into separate rack-level failure domains,
   used for distributed systems that need rack awareness.
 
-![Placement groups created](./Screenshots/placement%20group(2).png)
+![Placement groups created](./Screenshots/placement%20group.png)
 
 ---
 

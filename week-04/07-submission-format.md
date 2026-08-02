@@ -1,7 +1,7 @@
 # Week 4 Submission Format
 
 ```text
-submissions/week-04/<github-username>/
+week-04/submissions/<github-username>/
 ├── README.md
 ├── architecture.png
 └── evidence/

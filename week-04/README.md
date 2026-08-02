@@ -114,6 +114,6 @@ targets.
 
 <div align="center">
 
-[Week 3](../week-03/) | [Home](../README.md)
+[Week 3](../week-03/) | [Home](../README.md) | [Week 5](../week-05/)
 
 </div>

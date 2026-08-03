@@ -1,29 +1,38 @@
-# Day 9 - ALB Backed Auto Scaling Group
+# Week 5 - Auto Scaling and Elastic Load Balancing
 
-## Objective
+## Learner
 
-The objective of this lab was to build a highly available and scalable web application architecture using an Application Load Balancer (ALB) and Auto Scaling Group (ASG).
-
-The infrastructure automatically distributes incoming traffic across EC2 instances and launches or terminates instances based on CPU utilization.
+| Field | Value |
+|-------|-------|
+| Name | Shaikh Aliya Firdous |
+| GitHub | https://github.com/Aliyas-22 |
+| LinkedIn | *Add your LinkedIn profile* |
+| AWS Region | ap-south-1 (Mumbai) |
 
 ---
 
-## AWS Services Used
+# Objective
+
+The objective of this lab was to build a highly available and scalable web application using an Application Load Balancer (ALB) and an Auto Scaling Group (ASG). The infrastructure was designed to automatically distribute incoming traffic across EC2 instances, monitor instance health, launch additional instances during increased CPU utilization, and terminate unnecessary instances when demand decreased. This lab also demonstrated how AWS services work together to provide high availability, fault tolerance, and automatic scaling.
+
+---
+
+# AWS Services Used
 
 - Amazon EC2
-- Launch Template
+- Launch Templates
 - Security Groups
+- IAM Role
 - Target Group
 - Application Load Balancer (ALB)
 - Auto Scaling Group (ASG)
 - CloudWatch
-- IAM
 - Amazon Linux 2023
 - Nginx
 
 ---
 
-## Resources Created
+# Resources Created
 
 | Resource | Name |
 |----------|------|
@@ -34,53 +43,39 @@ The infrastructure automatically distributes incoming traffic across EC2 instanc
 | Target Group | cloudadhar-day9-tg |
 | Application Load Balancer | cloudadhar-day9-alb |
 | Auto Scaling Group | cloudadhar-day9-asg |
-| Scaling Policy | cloudadhar-day9-cpu50-policy |
-| EC2 Instance | cloudadhar-day9-web-instance |
+| Target Tracking Policy | cloudadhar-day9-cpu50-policy |
+| EC2 Name Tag | cloudadhar-day9-web-instance |
 
 ---
 
-## Tags Used
+# Day 9
 
-The following tags were applied to all supported resources.
+## 1. Security Groups
 
-| Key | Value |
-|------|-------|
-| Project | AWS-Zero-To-Hero |
-| Day | 09 |
-| Environment | Training |
-| Owner | CloudAdhar |
-| DataClassification | Training-Only |
-
-The Auto Scaling Group was configured to propagate these tags automatically to every new EC2 instance.
-
----
-
-# Step 1 - Create Security Groups
-
-Two security groups were created to separate internet traffic from application traffic.
+Two security groups were created to separate public traffic from application traffic.
 
 ### ALB Security Group
 
-Configured to allow:
+Configuration:
 
-- HTTP (Port 80) from anywhere (`0.0.0.0/0`)
+- HTTP (Port 80) allowed from `0.0.0.0/0`.
 
 Purpose:
 
 - Accept incoming requests from users on the internet.
 
-### Web Server Security Group
+### Web Security Group
 
-Configured to allow:
+Configuration:
 
-- HTTP (Port 80) **only** from the ALB Security Group.
-- SSH (Port 22) temporarily from my public IP for administration.
+- HTTP (Port 80) allowed only from the ALB Security Group.
+- SSH (Port 22) temporarily allowed from my public IP for administration and removed after testing.
 
 Purpose:
 
-- Ensure EC2 instances accept web traffic only from the load balancer.
+- Prevent direct public access to EC2 instances while allowing traffic only through the Application Load Balancer.
 
-### Screenshots
+### Screenshot
 
 ![ALB Security Group](Screenshots/sg-alb.png)
 
@@ -88,33 +83,35 @@ Purpose:
 
 ---
 
-# Step 2 - Create Launch Template
+## 2. Launch Template
 
-A Launch Template was created to define the configuration used whenever the Auto Scaling Group launches a new EC2 instance.
+A Launch Template named **cloudadhar-day9-lt** was created to define the EC2 configuration used by the Auto Scaling Group.
 
-Configuration included:
+Configuration:
 
 - Amazon Linux 2023
 - t3.micro
-- 8 GiB gp3 EBS volume
+- 8 GiB gp3 encrypted EBS volume
 - IMDSv2 enabled
 - Detailed Monitoring enabled
+- IAM Instance Profile attached
 - Web Security Group attached
-- IAM Role attached
+- User Data configured
 
-User Data was added to automatically:
+The User Data script automatically:
 
-- Install Nginx
-- Enable and start the service
-- Retrieve EC2 metadata using IMDSv2
-- Create a dynamic web page displaying:
+- Installed Nginx
+- Enabled and started the service
+- Retrieved EC2 metadata using IMDSv2
+- Created a dynamic web page showing:
   - Instance ID
   - Instance Type
   - Availability Zone
-  - Private IP
-- Create `/health.html` for ALB health checks
+  - Private IP Address
+  - Hostname
+- Created `/health.html` for ALB health checks
 
-This allows every new EC2 instance launched by the Auto Scaling Group to configure itself automatically without manual intervention.
+This ensured every instance launched by the Auto Scaling Group was configured automatically without manual intervention.
 
 ### Screenshot
 
@@ -122,21 +119,23 @@ This allows every new EC2 instance launched by the Auto Scaling Group to configu
 
 ---
 
-# Step 3 - Create Target Group
+## 3. Target Group
 
 An Instance Target Group was created.
 
 Configuration:
 
-- Target Type: Instance
-- Protocol: HTTP
-- Port: 80
-- Health Check Path: `/health.html`
-- Success Code: 200
+| Setting | Value |
+|---------|-------|
+| Target Type | Instance |
+| Protocol | HTTP |
+| Port | 80 |
+| Health Check Path | /health.html |
+| Success Code | 200 |
 
 Purpose:
 
-The Target Group continuously checks whether each EC2 instance is healthy before sending user traffic.
+The Target Group continuously monitors the health of EC2 instances. Only healthy instances receive incoming requests from the Application Load Balancer.
 
 ### Screenshot
 
@@ -144,20 +143,20 @@ The Target Group continuously checks whether each EC2 instance is healthy before
 
 ---
 
-# Step 4 - Create Application Load Balancer
+## 4. Application Load Balancer
 
-An internet-facing Application Load Balancer was created.
+An Internet-facing Application Load Balancer was created.
 
 Configuration:
 
-- Listener: HTTP (80)
-- Forward requests to the Target Group
+- Listener: HTTP (Port 80)
+- Target Group attached
 - Two Availability Zones selected
 - ALB Security Group attached
 
 Purpose:
 
-The ALB distributes incoming requests across healthy EC2 instances and improves application availability.
+The ALB distributes incoming HTTP requests across healthy EC2 instances, improving availability and fault tolerance.
 
 ### Screenshot
 
@@ -165,26 +164,24 @@ The ALB distributes incoming requests across healthy EC2 instances and improves 
 
 ---
 
-# Step 5 - Create Auto Scaling Group
+## 5. Auto Scaling Group
 
-The Auto Scaling Group was created using the Launch Template.
+An Auto Scaling Group named **cloudadhar-day9-asg** was created using the Launch Template.
 
 Configuration:
 
-- Launch Template attached
-- Existing Target Group attached
-- Minimum Capacity: 1
-- Desired Capacity: 1
-- Maximum Capacity: 2
-- Health Check Type:
-  - EC2
-  - ELB
-- Grace Period: 300 seconds
-- Instance Warmup: 120 seconds
+| Setting | Value |
+|---------|-------|
+| Minimum Capacity | 1 |
+| Desired Capacity | 1 |
+| Maximum Capacity | 2 |
+| Health Check | EC2 + ELB |
+| Grace Period | 300 Seconds |
+| Instance Warmup | 120 Seconds |
 
 Purpose:
 
-The Auto Scaling Group maintains the desired number of EC2 instances and automatically replaces unhealthy instances.
+The Auto Scaling Group automatically maintains the desired number of EC2 instances and replaces unhealthy instances whenever necessary.
 
 ### Screenshot
 
@@ -192,15 +189,17 @@ The Auto Scaling Group maintains the desired number of EC2 instances and automat
 
 ---
 
-# Step 6 - Verify Initial Deployment
+## 6. Initial Deployment Verification
 
 After the Auto Scaling Group launched the first EC2 instance:
 
-- Instance became healthy.
-- Target Group reported the target as Healthy.
-- Application became accessible through the ALB DNS.
+- The instance entered the Running state.
+- Nginx started successfully.
+- Target Group health checks passed.
+- The instance became Healthy.
+- The application was successfully accessed using the ALB DNS.
 
-The following command was used to verify the ALB response:
+Command used:
 
 ```bash
 curl http://<ALB-DNS>
@@ -208,25 +207,25 @@ curl http://<ALB-DNS>
 
 ### Screenshot
 
-![Curl Verification](Screenshots/curl-command.png)
+![Curl Command](Screenshots/curl-command.png)
 
 ---
 
-# Step 7 - Configure Dynamic Scaling Policy
+## 7. Target Tracking Scaling Policy
 
 A Target Tracking Scaling Policy was created.
 
 Configuration:
 
-- Metric: Average CPU Utilization
-- Target Value: 50%
-- Scale-In Enabled
+| Setting | Value |
+|---------|-------|
+| Metric | Average CPU Utilization |
+| Target Value | 50% |
+| Scale-In | Enabled |
 
 Purpose:
 
-Whenever average CPU utilization exceeds 50%, the Auto Scaling Group launches another EC2 instance.
-
-When CPU utilization falls below the target value, the extra instance is automatically terminated.
+Whenever CPU utilization exceeded 50%, the Auto Scaling Group automatically launched an additional EC2 instance. When CPU utilization decreased, the extra instance was terminated automatically.
 
 ### Screenshot
 
@@ -234,11 +233,11 @@ When CPU utilization falls below the target value, the extra instance is automat
 
 ---
 
-# Step 8 - Generate CPU Load
+## 8. CPU Load Test
 
-To test automatic scaling, CPU stress was generated using `stress-ng`.
+To test automatic scaling, CPU stress was generated using **stress-ng**.
 
-Commands:
+Commands executed:
 
 ```bash
 sudo dnf install -y stress-ng
@@ -251,7 +250,7 @@ pgrep -af stress-ng
 
 Purpose:
 
-The workload increased CPU utilization above the configured threshold, triggering the Auto Scaling policy.
+The workload increased CPU utilization above the configured threshold, allowing CloudWatch to trigger the scaling policy.
 
 ### Screenshot
 
@@ -259,15 +258,16 @@ The workload increased CPU utilization above the configured threshold, triggerin
 
 ---
 
-# Step 9 - Verify Scale Out
+## 9. Scale-Out Result
 
-After CPU utilization remained above the configured threshold:
+Once CPU utilization remained above 50%:
 
-- CloudWatch Alarm entered the ALARM state.
-- Desired Capacity changed from 1 to 2.
-- Auto Scaling Group launched a new EC2 instance.
-- The new instance automatically joined the Target Group.
-- Health checks passed successfully.
+- CloudWatch Alarm entered the **ALARM** state.
+- Desired Capacity changed from **1** to **2**.
+- Auto Scaling launched a second EC2 instance.
+- The new instance completed initialization.
+- The Target Group automatically registered the instance.
+- Both instances became Healthy.
 
 ### Screenshot
 
@@ -275,29 +275,29 @@ After CPU utilization remained above the configured threshold:
 
 ### Screenshot
 
-![Second Instance Created](Screenshots/2nd-instance-launched.png)
+![Second Instance](Screenshots/2nd-instance-launched.png)
 
 ---
 
-# Step 10 - Verify Load Balancing
+## 10. Load Balancing Verification
 
-After the second instance became healthy, repeated requests to the ALB returned responses from different EC2 instances.
+Repeated requests to the Application Load Balancer returned responses from different EC2 instances.
 
-The displayed Instance ID changed between requests, confirming that traffic was distributed across both instances.
-
-### Screenshot
-
-![Instance 1 Response](Screenshots/servingroleto-instanceid1.png)
+The displayed Instance ID changed between requests, confirming that traffic was being distributed across both healthy instances.
 
 ### Screenshot
 
-![Instance 2 Response](Screenshots/serving-role-instanceid2.png)
+![Instance 1](Screenshots/servingroleto-instanceid1.png)
+
+### Screenshot
+
+![Instance 2](Screenshots/serving-role-instanceid2.png)
 
 ---
 
-# Step 11 - Verify Scale In
+## 11. Scale-In Result
 
-After stopping the CPU stress process:
+After stopping the CPU load:
 
 ```bash
 sudo pkill stress-ng
@@ -305,84 +305,115 @@ sudo pkill stress-ng
 pgrep -af stress-ng
 ```
 
-CPU utilization gradually decreased.
+CloudWatch detected reduced CPU utilization.
 
-Once CloudWatch detected sustained low CPU usage:
+The Auto Scaling Group then:
 
-- Desired Capacity changed from 2 to 1.
-- One EC2 instance entered the Draining state.
-- Auto Scaling Group terminated the extra instance.
-- The remaining instance continued serving requests.
+- Changed Desired Capacity from **2** to **1**
+- Put one target into the **Draining** state
+- Terminated the extra EC2 instance
+- Continued serving traffic using the remaining healthy instance
 
 This confirmed that automatic scale-in was functioning correctly.
 
 ### Screenshot
 
-![Scale In Completed](Screenshots/ASG-desiredstatecomplete.png)
+![Scale In](Screenshots/ASG-desiredstatecomplete.png)
 
 ---
 
-# Troubleshooting
+## 12. Self-Healing Result
 
-### Unable to access the application using EC2 Public IP
+The Auto Scaling Group continuously monitors instance health using both EC2 and ELB health checks.
 
-Issue:
+If an instance becomes unhealthy or is manually terminated, the Auto Scaling Group automatically launches a replacement instance to maintain the desired capacity.
 
-The application was reachable through the ALB DNS but not directly through the EC2 Public IP.
-
-Root Cause:
-
-The Web Security Group allowed HTTP traffic only from the ALB Security Group, which intentionally blocks direct internet access to EC2.
-
-Resolution:
-
-Verified application access using the ALB DNS, which is the intended production architecture.
+**Note:** This functionality was configured as part of the architecture, although a manual self-healing test was not performed during this lab.
 
 ---
 
-### SSH Connection Failed
+## 13. Troubleshooting Lesson
 
-Issue:
+### Issue
 
-Unable to connect to the EC2 instance.
+Initially, the application was accessible through the Application Load Balancer DNS but not through the EC2 Public IP.
 
-Root Cause:
+### Root Cause
 
-SSH rule had been removed from the Web Security Group.
+The Web Security Group allowed HTTP traffic only from the ALB Security Group. Direct internet traffic to the EC2 instance was intentionally blocked.
 
-Resolution:
+### Resolution
 
-Temporarily added an SSH rule for my public IP, connected successfully, completed verification, and removed the rule afterward.
+Verified that the application was correctly accessible through the ALB DNS, which is the recommended production architecture.
 
----
-
-### Auto Scaling Did Not Launch a New Instance Immediately
-
-Issue:
-
-The second EC2 instance was not created immediately after starting CPU stress.
-
-Root Cause:
-
-The Target Tracking policy waits for CloudWatch metrics and alarm evaluation before scaling.
-
-Resolution:
-
-Continued generating CPU load until the CloudWatch Alarm entered the ALARM state, after which the Auto Scaling Group launched a second instance.
+Another issue encountered was delayed Auto Scaling. The second EC2 instance did not launch immediately because CloudWatch required sufficient evaluation periods before triggering the scaling policy. Once the CPU utilization remained above the configured threshold, the scaling policy launched the second instance successfully.
 
 ---
 
-## Learning Outcomes
+# Architecture Decision
 
-Through this lab I learned how to:
+This architecture was designed to provide scalability, availability, and security while minimizing operational effort. A Launch Template was used to define a standard EC2 configuration so that every instance launched by the Auto Scaling Group would have the same operating system, instance type, storage configuration, security group, IAM role, and User Data script. This ensured consistency and reduced manual configuration.
 
-- Configure secure communication between ALB and EC2 using Security Groups.
+An Application Load Balancer was selected because it distributes incoming HTTP traffic across multiple healthy EC2 instances. Health checks were configured using `/health.html`, allowing the load balancer to send requests only to healthy instances. This improves application reliability and prevents users from reaching failed servers.
+
+The Auto Scaling Group was attached directly to the Target Group so that newly launched instances would be registered automatically without manual intervention. Target Tracking Scaling was chosen because it automatically adjusts capacity based on CPU utilization. During periods of high CPU usage, the Auto Scaling Group launched an additional EC2 instance, and when the workload decreased, it terminated the unnecessary instance, reducing infrastructure cost.
+
+Separate Security Groups were used for the Application Load Balancer and EC2 instances to improve security. The ALB accepted internet traffic, while EC2 instances accepted traffic only from the ALB. IMDSv2 was enabled to securely retrieve instance metadata and protect against metadata service attacks. Overall, this architecture demonstrates AWS best practices for building a secure, highly available, and automatically scalable web application.
+
+---
+
+# Cleanup
+
+The following resources were deleted after completing the lab to avoid unnecessary AWS charges.
+
+- Deleted Auto Scaling Group
+- Deleted Dynamic Scaling Policy
+- Deleted Application Load Balancer
+- Deleted Target Group
+- Deleted Launch Template
+- Terminated EC2 Instances
+- Deleted Security Groups
+- Verified no Elastic IPs remained
+- Verified no remaining billable resources in `ap-south-1`
+
+---
+
+# Reflection
+
+### 1. Which metric best represents demand for this application?
+
+Average CPU Utilization was selected because the workload generated using `stress-ng` directly increased CPU usage, making it an appropriate metric for demonstrating automatic scaling.
+
+---
+
+### 2. How do grace period, warmup, health checks, and draining differ?
+
+- **Grace Period** delays health evaluation immediately after an instance launches.
+- **Instance Warmup** prevents scaling decisions until a new instance has completed initialization.
+- **Health Checks** determine whether an instance is healthy enough to receive traffic.
+- **Connection Draining** allows existing client requests to complete before an instance is removed from the load balancer.
+
+---
+
+### 3. Which load balancer requirement was easiest to confuse, and why?
+
+The Security Group configuration was initially the most confusing. It became clear that the Application Load Balancer should receive internet traffic, while EC2 instances should accept traffic only from the ALB Security Group. This design improves security by preventing direct public access to backend servers.
+
+---
+
+# Learning Outcomes
+
+After completing this lab, I learned how to:
+
+- Design a secure Application Load Balancer architecture.
+- Configure Security Groups following AWS best practices.
 - Create reusable Launch Templates.
-- Bootstrap EC2 instances using User Data.
-- Configure ALB health checks.
+- Bootstrap EC2 instances automatically using User Data.
+- Configure Target Groups and Health Checks.
 - Build an Auto Scaling Group using a Launch Template.
 - Configure Target Tracking Scaling Policies.
-- Trigger automatic scale-out based on CPU utilization.
-- Verify ALB traffic distribution across multiple instances.
-- Observe automatic scale-in after CPU utilization decreased.
-- Troubleshoot common issues related to Security Groups, ALB health checks, and Auto Scaling behavior.
+- Generate CPU load using `stress-ng`.
+- Observe automatic Scale-Out based on CPU utilization.
+- Observe automatic Scale-In after workload reduction.
+- Understand how the Application Load Balancer distributes requests across healthy EC2 instances.
+- Troubleshoot Security Groups, Target Groups, Health Checks, and Auto Scaling behavior.

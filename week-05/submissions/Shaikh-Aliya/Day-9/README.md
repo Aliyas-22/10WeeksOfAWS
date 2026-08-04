@@ -17,6 +17,16 @@ The objective of this lab was to build a highly available and scalable web appli
 
 ---
 
+# ALB-Backed Auto Scaling
+
+## Architecture Diagram
+
+The following architecture diagram illustrates the complete infrastructure created in this lab. It shows how incoming client requests are routed through the Application Load Balancer (ALB) to EC2 instances managed by the Auto Scaling Group across multiple Availability Zones. It also demonstrates the relationship between the Launch Template, Target Group, Security Groups, and Auto Scaling policy used to automatically scale the application based on CPU utilization.
+
+![Architecture Diagram](./Diagram/ALB-serve(1).gif)
+
+---
+
 # AWS Services Used
 
 - Amazon EC2

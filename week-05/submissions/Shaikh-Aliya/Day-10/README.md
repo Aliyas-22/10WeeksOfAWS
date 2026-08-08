@@ -11,8 +11,9 @@ In this lab, I learned how to perform Blue/Green deployment using an Application
 ---
 ## Architecture
 
-![Day 10 Blue-Green Load Balancing Architecture](./Diagram/green-blue-flow.gif)
+The Day 10 architecture demonstrates Blue-Green deployment using AWS Application Load Balancer, Network Load Balancer, target groups, EC2 instances, health checks, security groups, weighted traffic forwarding, and host-based routing.
 
+![Day 10 Architecture](./Diagram/green-blue-flow.gif)
 
 # Services Used
 

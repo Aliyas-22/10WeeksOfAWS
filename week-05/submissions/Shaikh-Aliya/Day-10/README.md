@@ -9,6 +9,10 @@
 In this lab, I learned how to perform Blue/Green deployment using an Application Load Balancer (ALB). I created two EC2 instances (Blue and Green), configured path-based routing, host-based routing, weighted routing, target group stickiness, health checks, connection draining, and finally reused the same targets behind a Network Load Balancer (NLB).
 
 ---
+## Architecture
+
+![Day 10 Blue-Green Load Balancing Architecture](./Diagram/green-blue-flow.gif)
+
 
 # Services Used
 

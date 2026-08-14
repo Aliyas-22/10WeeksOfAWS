@@ -6,6 +6,13 @@
 
 ---
 
+# Architecture
+
+The architecture diagram for this Day 11 hands-on is available in the repository's `Diagram` folder.
+
+![Day 11 S3 Architecture](./Daigram/srr&crr.gif)
+
+
 
 ## Objective
 

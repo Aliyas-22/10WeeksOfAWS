@@ -11,6 +11,11 @@ This Day 13 practical covers Amazon RDS for MySQL, database recovery, read repli
 
 ---
 
+## Architecture
+
+![Day 13 RDS Architecture](./Daigram/RDS.gif)
+
+
 # Tasks 1–14 — RDS, Recovery, and Read Replica
 
 ## Task 1 — Prepare Session Manager Access

@@ -8,7 +8,7 @@ The main goal of this hands-on was to create and work with a DynamoDB table, per
 
 ### Architecture
 
-The architecture diagram for this Day 11 hands-on is available in the repository's `Diagram` folder.
+The architecture diagram for this Day 14 hands-on is available in the repository's `Diagram` folder.
 
 ![Day 14 Dynamodb Architecture](./Daigram/Day-14.gif)
 

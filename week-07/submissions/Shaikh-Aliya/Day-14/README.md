@@ -8,17 +8,10 @@ The main goal of this hands-on was to create and work with a DynamoDB table, per
 
 ### Architecture
 
-```text
-DynamoDB Table
-      ↓
-DynamoDB Stream
-      ↓
-Lambda Stream Consumer
-      ↓
-CloudWatch Logs
-```
+The architecture diagram for this Day 11 hands-on is available in the repository's `Diagram` folder.
 
----
+![Day 14 Dynamodb Architecture](./Daigram/Day-14.gif)
+
 
 ## 1. Exported the Data and Created the DynamoDB Table
 
